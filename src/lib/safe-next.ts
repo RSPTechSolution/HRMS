@@ -16,5 +16,8 @@ export function safeNext(next: string | null | undefined, fallback = "/home"): s
   }
   if (url.origin !== PLACEHOLDER_ORIGIN) return fallback;
   if (url.pathname === "/login" || url.pathname.startsWith("/login/")) return fallback;
-  return `${url.pathname}${url.search}${url.hash}`;
+  const out = `${url.pathname}${url.search}${url.hash}`;
+  // Dot segments can normalise "/.//x" into "//x"; validate what we actually return.
+  if (out.startsWith("//") || out.includes("\\")) return fallback;
+  return out;
 }

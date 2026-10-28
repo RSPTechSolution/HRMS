@@ -26,6 +26,9 @@ describe("safeNext", () => {
       expect(safeNext(value as string | null | undefined)).toBe("/home");
     },
   );
+  it.each(["/.//evil.com", "/a/..//evil.com", "/%2e//evil.com"])("rejects paths that normalise to protocol-relative (%s)", (value) => {
+    expect(safeNext(value)).toBe("/home");
+  });
   it.each(["/\t/evil.com", "/\n/evil.com", "/\r/evil.com", "/ /evil.com", "/\u0000/evil.com"])(
     "rejects whitespace or control characters browsers strip (%j)",
     (value) => {
