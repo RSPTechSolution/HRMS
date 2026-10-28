@@ -44,6 +44,13 @@ describe("authenticate", () => {
     expect(await db.loginAttempt.count({ where: { email: user.email } })).toBe(5);
   });
 
+  it("does not let parallel guesses slip past the five-try limit", async () => {
+    const { user } = await makeEmployee({ passwordHash });
+    const results = await Promise.all(Array.from({ length: 8 }, () => authenticate(user.email, "wrong-password", now)));
+    const verified = results.filter((r) => !r.ok && r.reason === "invalid").length;
+    expect(verified).toBeLessThanOrEqual(5);
+  });
+
   it("unlocks 15 minutes after the last failure", async () => {
     const { user } = await makeEmployee({ passwordHash });
     for (let i = 0; i < 5; i++) await authenticate(user.email, "wrong-password", minutes(i));

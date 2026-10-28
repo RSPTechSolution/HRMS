@@ -14,8 +14,18 @@ function getDummyHash(): Promise<string> {
 
 export async function authenticate(emailInput: string, password: string, now = new Date()): Promise<AuthResult> {
   const email = emailInput.trim().toLowerCase();
-  const attempts = await db.loginAttempt.findMany({ where: { email }, orderBy: { at: "desc" }, take: 20 });
-  if (isLockedOut(attempts, now)) return { ok: false, reason: "locked" };
+
+  // Reserve this attempt as a failure *before* checking the lock, so parallel guesses see each other.
+  const attempt = await db.loginAttempt.create({ data: { email, success: false, at: now } });
+  const others = await db.loginAttempt.findMany({
+    where: { email, id: { not: attempt.id } },
+    orderBy: { at: "desc" },
+    take: 20,
+  });
+  if (isLockedOut(others, now)) {
+    await db.loginAttempt.delete({ where: { id: attempt.id } });
+    return { ok: false, reason: "locked" };
+  }
 
   const user = await db.user.findUnique({ where: { email }, include: { employee: true } });
   let passwordOk = false;
@@ -23,6 +33,6 @@ export async function authenticate(emailInput: string, password: string, now = n
   else await verifyPassword(await getDummyHash(), password);
 
   const ok = !!user && passwordOk && user.employee.status !== "EXITED";
-  await db.loginAttempt.create({ data: { email, success: ok, at: now } });
+  if (ok) await db.loginAttempt.update({ where: { id: attempt.id }, data: { success: true } });
   return ok && user ? { ok: true, userId: user.id } : { ok: false, reason: "invalid" };
 }
