@@ -1,0 +1,145 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Department {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  employees Employee[]
+}
+
+model Employee {
+  id           String      @id @default(cuid())
+  code         String      @unique
+  fullName     String
+  workEmail    String      @unique
+  designation  String
+  status       String      @default("ACTIVE") // ACTIVE | NOTICE | EXITED
+  joinedOn     String // YYYY-MM-DD (IST calendar date)
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  managerId    String?
+  manager      Employee?   @relation("Reports", fields: [managerId], references: [id])
+  reports      Employee[]  @relation("Reports")
+  user         User?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model User {
+  id            String          @id @default(cuid())
+  email         String          @unique
+  passwordHash  String?
+  isHR          Boolean         @default(false)
+  isPayroll     Boolean         @default(false)
+  isAdmin       Boolean         @default(false)
+  employeeId    String          @unique
+  employee      Employee        @relation(fields: [employeeId], references: [id])
+  sessions      Session[]
+  tokens        PasswordToken[]
+  notifications Notification[]
+  createdAt     DateTime        @default(now())
+}
+
+model Session {
+  id        String   @id // sha256(token)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model PasswordToken {
+  id        String    @id // sha256(token)
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purpose   String // SET | RESET
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, purpose])
+}
+
+model LoginAttempt {
+  id      String   @id @default(cuid())
+  email   String
+  success Boolean
+  at      DateTime @default(now())
+
+  @@index([email, at])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      String
+  title     String
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String
+  before     String? // JSON
+  after      String? // JSON
+  at         DateTime @default(now())
+
+  @@index([entityType, entityId])
+}
+
+model Setting {
+  key   String @id
+  value String // JSON
+}
+
+model ApprovalPolicy {
+  type  String @id
+  steps String // JSON array of "MANAGER" | "HR"
+}
+
+model ApprovalRequest {
+  id          String         @id @default(cuid())
+  type        String
+  subjectId   String
+  requesterId String // Employee id
+  status      String         @default("PENDING") // PENDING | APPROVED | DECLINED | WITHDRAWN
+  currentStep Int            @default(0)
+  summary     String
+  steps       ApprovalStep[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@unique([type, subjectId])
+  @@index([status, type])
+}
+
+model ApprovalStep {
+  id          String          @id @default(cuid())
+  requestId   String
+  request     ApprovalRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  order       Int
+  role        String // MANAGER | HR
+  approverId  String? // Employee id for MANAGER steps; null = any HR/Admin
+  decision    String? // APPROVED | DECLINED
+  decidedById String?
+  comment     String?
+  decidedAt   DateTime?
+
+  @@unique([requestId, order])
+}

@@ -14,5 +14,6 @@ export default defineConfig({
     exclude: ["tests/e2e/**", "node_modules/**"],
     env: { DATABASE_URL: "file:./test.db" },
     fileParallelism: false,
+    globalSetup: ["tests/setup/global-setup.ts"],
   },
 });
