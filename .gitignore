@@ -1,7 +1,15 @@
 .superpowers/
 node_modules/
 .next/
+out/
 .env
 storage/
 *.db
 *.db-journal
+*.db-wal
+*.db-shm
+/src/generated/
+next-env.d.ts
+*.tsbuildinfo
+test-results/
+playwright-report/
