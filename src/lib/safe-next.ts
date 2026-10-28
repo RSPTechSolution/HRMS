@@ -7,7 +7,6 @@ const PLACEHOLDER_ORIGIN = "https://lnpeople.invalid";
  */
 export function safeNext(next: string | null | undefined, fallback = "/home"): string {
   if (!next || !next.startsWith("/") || next.startsWith("//")) return fallback;
-  // eslint-disable-next-line no-control-regex
   if (/[\u0000-\u001F\u007F\s\\]/.test(next)) return fallback;
   let url: URL;
   try {
