@@ -1,5 +1,6 @@
 import "server-only";
 import { db } from "@/lib/db";
+import { daysOfMonth } from "@/lib/dates";
 import type { CurrentUser } from "@/domain/auth/types";
 import type { DayStatus } from "@/domain/attendance/types";
 import { visibleReportIds } from "@/server/people/hierarchy";
@@ -27,8 +28,16 @@ export type ReportRow = {
 export async function getMonthlyReport(viewer: CurrentUser, year: number, month: number, now = new Date()): Promise<ReportRow[] | null> {
   const visible = await visibleReportIds(viewer);
   if (visible !== "ALL" && visible.length === 0) return null;
+  const dates = daysOfMonth(year, month);
   const people = await db.employee.findMany({
-    where: { status: { in: ["ACTIVE", "NOTICE"] }, ...(visible === "ALL" ? {} : { id: { in: visible } }) },
+    where: {
+      // People who have since left still appear in months they worked (payroll reads this report).
+      OR: [
+        { status: { in: ["ACTIVE", "NOTICE"] } },
+        { status: "EXITED", attendanceEvents: { some: { workDate: { gte: dates[0], lte: dates.at(-1)! } } } },
+      ],
+      ...(visible === "ALL" ? {} : { id: { in: visible } }),
+    },
     select: { id: true, code: true, fullName: true, joinedOn: true, department: { select: { name: true } } },
     orderBy: { fullName: "asc" },
   });

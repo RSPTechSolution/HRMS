@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { db } from "@/lib/db";
 import { istDateTime } from "@/lib/dates";
 import { loadCurrentUser } from "@/server/auth/users";
 import { recordAttendance } from "@/server/attendance/record";
@@ -28,6 +29,14 @@ describe("monthly attendance report", () => {
     expect(rows.find((r) => r.employeeId === engineer.employee.id)).toMatchObject({
       fullName: "Arjun Mehta", present: 1, absent: 18, short: 0, halfDay: 0, holidays: 0, missingCheckout: 0, leave: 0, wfh: 0, totalMinutes: 555, averageMinutes: 555,
     });
+  });
+
+  it("keeps people who have since left in the months they worked", async () => {
+    const { hr, engineer, me } = await org();
+    await db.employee.update({ where: { id: engineer.employee.id }, data: { status: "EXITED" } });
+    const rows = (await getMonthlyReport(await me(hr), 2026, 10, now))!;
+    expect(rows.find((r) => r.employeeId === engineer.employee.id)?.present).toBe(1);
+    expect((await getMonthlyReport(await me(hr), 2026, 9, now))!.some((r) => r.employeeId === engineer.employee.id)).toBe(false);
   });
 
   it("shows managers their team only and nobody else gets a report", async () => {
