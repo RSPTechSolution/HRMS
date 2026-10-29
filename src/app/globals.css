@@ -96,6 +96,9 @@ button:disabled { cursor: not-allowed; }
 .nav-pill { position: absolute; top: 0; left: 0; border-radius: 12px; background: rgba(255, 255, 255, 0.1); transition: transform 0.5s var(--spring), width 0.3s, height 0.3s, opacity 0.2s; pointer-events: none; }
 .nav-btn { position: relative; display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 12px; border-radius: 12px; font-weight: 600; font-size: 14.5px; color: var(--side-ink); transition: color 0.2s; }
 .nav-btn:hover, .nav-btn[aria-current="page"] { color: #fff; }
+.nav-btn .count { margin-left: auto; background: var(--sun); color: #15382a; font: 800 11px var(--ui); padding: 2px 7px; border-radius: 99px; }
+.side { overflow-y: auto; }
+.side-foot { padding-top: 16px; }
 .side-foot { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
 .hint { font-size: 12px; padding: 0 12px; }
 .hint kbd { font: 700 11px var(--ui); padding: 2px 6px; border-radius: 5px; background: rgba(255, 255, 255, 0.1); color: #fff; }

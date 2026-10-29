@@ -7,13 +7,15 @@ import { Sidebar } from "@/components/shell/Sidebar";
 import { ThemeToggle } from "@/components/shell/ThemeToggle";
 import { navFor } from "@/components/shell/nav";
 import { primaryRoleLabel } from "@/domain/auth/permissions";
+import "@/server/approvals/types";
+import { listPendingFor } from "@/server/approvals/engine";
 import { requireUser } from "@/server/auth/current-user";
 import { getShellView } from "@/server/shell";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
-  const { items, unread } = await getShellView(user.userId);
-  const links = navFor(user);
+  const [{ items, unread }, waiting] = await Promise.all([getShellView(user.userId), listPendingFor(user)]);
+  const links = navFor(user, waiting.length);
 
   return (
     <ToastProvider>
