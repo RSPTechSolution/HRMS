@@ -1,5 +1,8 @@
 export const MAX_FAILURES = 5;
 export const LOCK_WINDOW_MS = 15 * 60 * 1000;
+/** Slow-guessing cap: this many failures in a day, with no success between, locks until a success or reset. */
+export const DAILY_MAX_FAILURES = 20;
+export const DAY_MS = 24 * 60 * 60 * 1000;
 
 export type Attempt = { success: boolean; at: Date };
 
@@ -14,6 +17,7 @@ export function isLockedOut(attempts: Attempt[], now: Date): boolean {
     if (attempt.success) break;
     streak.push(attempt.at);
   }
+  if (streak.filter((at) => now.getTime() - at.getTime() < DAY_MS).length >= DAILY_MAX_FAILURES) return true;
   for (let i = 0; i + MAX_FAILURES - 1 < streak.length; i++) {
     const latest = streak[i];
     if (now.getTime() - latest.getTime() >= LOCK_WINDOW_MS) break;

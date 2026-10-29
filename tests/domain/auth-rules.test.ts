@@ -49,6 +49,12 @@ describe("isLockedOut", () => {
     const burst = [0, 1, 2, 3, 4].map((i) => fail(14 * 60_000 + i * 60_000));
     expect(isLockedOut(burst, now)).toBe(true);
   });
+  it("caps slow guessing: 20 spread-out failures within a day lock the account", () => {
+    const spread = (n: number) => Array.from({ length: n }, (_, i) => fail(1000 + i * 30 * 60_000)).filter((a) => now.getTime() - a.at.getTime() < 24 * 3_600_000);
+    expect(spread(19)).toHaveLength(19);
+    expect(isLockedOut(spread(19), now)).toBe(false);
+    expect(isLockedOut(spread(20), now)).toBe(true);
+  });
   it("does not depend on input order", () => {
     expect(isLockedOut([fail(5000), fail(1000), fail(3000), fail(2000), fail(4000)], now)).toBe(true);
   });

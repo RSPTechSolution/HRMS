@@ -20,7 +20,7 @@ export async function authenticate(emailInput: string, password: string, now = n
   const others = await db.loginAttempt.findMany({
     where: { email, id: { not: attempt.id } },
     orderBy: { at: "desc" },
-    take: 20,
+    take: 50,
   });
   if (isLockedOut(others, now)) {
     await db.loginAttempt.delete({ where: { id: attempt.id } });
