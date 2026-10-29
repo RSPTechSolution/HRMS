@@ -27,6 +27,11 @@ export async function getSettings(): Promise<Settings> {
     const parsed = (SETTINGS_SCHEMA[row.key] as z.ZodType).safeParse(value);
     if (parsed.success) (out as Record<string, unknown>)[row.key] = parsed.data;
   }
+  // Attendance rules rely on half-day < full day; if stored data breaks that, use both defaults.
+  if (out["attendance.halfDayMinutes"] >= out["attendance.requiredDailyMinutes"]) {
+    out["attendance.requiredDailyMinutes"] = SETTINGS_DEFAULTS["attendance.requiredDailyMinutes"];
+    out["attendance.halfDayMinutes"] = SETTINGS_DEFAULTS["attendance.halfDayMinutes"];
+  }
   return out;
 }
 
