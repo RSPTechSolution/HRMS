@@ -10,6 +10,9 @@ describe("correction input", () => {
     expect(correctionInputSchema.safeParse({ workDate: "2026-10-14", inTime: "9:30", outTime: "18:30", reason: "Forgot" }).success).toBe(false);
     expect(correctionInputSchema.safeParse({ workDate: "2026-10-14", inTime: "09:30", outTime: "18:30", reason: "oops" }).success).toBe(false);
   });
+  it.each(["2026-10-99", "2026-02-30", "2026-13-01", "2026-00-10"])("refuses the impossible date %s", (workDate) => {
+    expect(correctionInputSchema.safeParse({ workDate, inTime: "09:30", outTime: "18:30", reason: "Forgot to check in" }).success).toBe(false);
+  });
 });
 
 describe("validateCorrection", () => {

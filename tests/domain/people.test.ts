@@ -56,6 +56,8 @@ describe("employee input", () => {
     ["dateOfBirth", "2015-01-01"],
     ["bloodGroup", "C+"],
     ["phone", "12ab"],
+    ["joinedOn", "2026-02-31"],
+    ["dateOfBirth", "1995-13-01"],
   ])("rejects %s = %s", (field, value) => {
     const r = schema.safeParse({ ...valid, [field]: value });
     expect(r.success).toBe(false);

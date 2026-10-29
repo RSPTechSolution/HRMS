@@ -25,6 +25,11 @@ export function istTimeLabel(d: Date): string {
   return `${pad(shifted.getUTCHours())}:${pad(shifted.getUTCMinutes())}`;
 }
 
+/** True only for a real calendar date in YYYY-MM-DD form ("2026-02-30" and "2026-10-99" are false). */
+export function isRealDate(key: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(key) && keyFromUtcMs(utcMsFromKey(key)) === key;
+}
+
 export function addDays(key: string, n: number): string {
   return keyFromUtcMs(utcMsFromKey(key) + n * DAY_MS);
 }

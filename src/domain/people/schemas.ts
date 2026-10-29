@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isRealDate } from "@/lib/dates";
 import { BLOOD_GROUPS, EMPLOYEE_STATUSES, EMPLOYMENT_TYPES, GENDERS } from "./types";
 
 const blankToNull = (v: unknown) => (v === "" || v === undefined ? null : v);
@@ -6,7 +7,7 @@ const opt = <T extends z.ZodType>(schema: T) => z.preprocess(blankToNull, schema
 /** HTML checkboxes send "on"; JSON callers send booleans. */
 const flag = z.preprocess((v) => v === true || v === "on" || v === "true", z.boolean());
 
-const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use a date like 2026-10-29.");
+const isoDate = z.string().refine(isRealDate, "Use a real date like 2026-10-29.");
 const phone = z.string().trim().regex(/^\+?\d{10,15}$/, "Enter a phone number with 10 to 15 digits.");
 const lowerEmail = (message: string) => z.preprocess((v) => (typeof v === "string" ? v.trim().toLowerCase() : v), z.email(message));
 

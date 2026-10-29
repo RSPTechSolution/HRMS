@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { addDays, istDateTime } from "@/lib/dates";
+import { addDays, isRealDate, istDateTime } from "@/lib/dates";
 
 const time = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Use a time like 09:30.");
 const optionalTime = z.preprocess((v) => (v === "" || v === undefined ? null : v), time.nullable());
 
 export const correctionInputSchema = z.object({
-  workDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Pick a day."),
+  workDate: z.string().refine(isRealDate, "Pick a day."),
   inTime: time,
   outTime: time,
   breakStart: optionalTime,
