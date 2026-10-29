@@ -27,7 +27,8 @@ describe("getMyProfile", () => {
     const dept = await db.department.create({ data: { name: "Engineering" } });
     const boss = await makeEmployee({ name: "Ananya Sharma" });
     const { user, employee } = await makeEmployee({ name: "Arjun Mehta", managerId: boss.employee.id });
-    await db.employee.update({ where: { id: employee.id }, data: { departmentId: dept.id, designation: "Senior Developer" } });
+    const designation = await db.designation.create({ data: { title: "Senior Developer", level: 3 } });
+    await db.employee.update({ where: { id: employee.id }, data: { departmentId: dept.id, designationId: designation.id } });
     expect(await getMyProfile(user.id)).toMatchObject({
       fullName: "Arjun Mehta",
       designation: "Senior Developer",

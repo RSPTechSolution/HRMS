@@ -13,22 +13,123 @@ model Department {
   employees Employee[]
 }
 
+model Designation {
+  id        String     @id @default(cuid())
+  title     String     @unique
+  level     Int        @default(1)
+  employees Employee[]
+}
+
 model Employee {
-  id           String      @id @default(cuid())
-  code         String      @unique
-  fullName     String
-  workEmail    String      @unique
-  designation  String
-  status       String      @default("ACTIVE") // ACTIVE | NOTICE | EXITED
-  joinedOn     String // YYYY-MM-DD (IST calendar date)
-  departmentId String?
-  department   Department? @relation(fields: [departmentId], references: [id])
-  managerId    String?
-  manager      Employee?   @relation("Reports", fields: [managerId], references: [id])
-  reports      Employee[]  @relation("Reports")
-  user         User?
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  id                String                 @id @default(cuid())
+  code              String                 @unique
+  fullName          String
+  preferredName     String?
+  workEmail         String                 @unique
+  designationId     String?
+  designation       Designation?           @relation(fields: [designationId], references: [id])
+  status            String                 @default("ACTIVE") // ACTIVE | NOTICE | EXITED
+  joinedOn          String // YYYY-MM-DD (IST calendar date)
+  probationEndsOn   String?
+  employmentType    String                 @default("FULL_TIME") // FULL_TIME | INTERN | CONTRACT
+  location          String                 @default("Mohali")
+  departmentId      String?
+  department        Department?            @relation(fields: [departmentId], references: [id])
+  managerId         String?
+  manager           Employee?              @relation("Reports", fields: [managerId], references: [id])
+  reports           Employee[]             @relation("Reports")
+  personalEmail     String?
+  phone             String?
+  dateOfBirth       String?
+  gender            String?
+  bloodGroup        String?
+  currentAddress    String?
+  permanentAddress  String?
+  emergencyName     String?
+  emergencyRelation String?
+  emergencyPhone    String?
+  bankHolder        String?
+  bankAccount       String?
+  bankIfsc          String?
+  pan               String?
+  aadhaar           String?
+  showBirthday      Boolean                @default(true)
+  user              User?
+  attendanceEvents  AttendanceEvent[]
+  attendanceDays    AttendanceDay[]
+  corrections       AttendanceCorrection[]
+  documents         Document[]
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+}
+
+model Holiday {
+  id   String @id @default(cuid())
+  date String @unique // YYYY-MM-DD
+  name String
+}
+
+model AttendanceEvent {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  workDate   String // YYYY-MM-DD the session belongs to
+  at         DateTime
+  kind       String // IN | OUT | BREAK_START | BREAK_END
+  source     String // WEB | CORRECTION | SYSTEM
+  createdAt  DateTime @default(now())
+
+  @@index([employeeId, workDate])
+  @@index([employeeId, at])
+}
+
+model AttendanceDay {
+  id            String    @id @default(cuid())
+  employeeId    String
+  employee      Employee  @relation(fields: [employeeId], references: [id])
+  workDate      String
+  firstInAt     DateTime?
+  lastOutAt     DateTime?
+  workedMinutes Int       @default(0)
+  breakMinutes  Int       @default(0)
+  status        String
+  flags         String    @default("[]") // JSON array
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([employeeId, workDate])
+}
+
+model AttendanceCorrection {
+  id           String    @id @default(cuid())
+  employeeId   String
+  employee     Employee  @relation(fields: [employeeId], references: [id])
+  workDate     String
+  inAt         DateTime
+  outAt        DateTime
+  breakStartAt DateTime?
+  breakEndAt   DateTime?
+  reason       String
+  status       String    @default("PENDING") // PENDING | APPROVED | DECLINED | WITHDRAWN
+  createdAt    DateTime  @default(now())
+
+  @@index([employeeId, workDate])
+}
+
+model Document {
+  id           String    @id @default(cuid())
+  employeeId   String
+  employee     Employee  @relation(fields: [employeeId], references: [id])
+  category     String
+  fileName     String
+  mimeType     String
+  size         Int
+  storageKey   String    @unique
+  uploadedById String
+  verifiedAt   DateTime?
+  verifiedById String?
+  createdAt    DateTime  @default(now())
+
+  @@index([employeeId])
 }
 
 model User {

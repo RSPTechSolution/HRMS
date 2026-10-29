@@ -13,6 +13,21 @@ describe("database harness", () => {
     expect(loaded.user?.id).toBe(user.id);
   });
 
+  it("stores attendance and documents for an employee and clears them", async () => {
+    const { employee } = await makeEmployee();
+    const designation = await db.designation.create({ data: { title: "Engineer", level: 2 } });
+    await db.employee.update({ where: { id: employee.id }, data: { designationId: designation.id, pan: "ABCDE1234F" } });
+    await db.attendanceEvent.create({ data: { employeeId: employee.id, workDate: "2026-10-28", at: new Date(), kind: "IN", source: "WEB" } });
+    await db.attendanceDay.create({ data: { employeeId: employee.id, workDate: "2026-10-28", status: "IN_PROGRESS" } });
+    await db.document.create({ data: { employeeId: employee.id, category: "ID_PROOF", fileName: "pan.pdf", mimeType: "application/pdf", size: 10, storageKey: "k1", uploadedById: employee.id } });
+    await db.holiday.create({ data: { date: "2026-11-08", name: "Diwali" } });
+    await resetDb();
+    expect(await db.attendanceEvent.count()).toBe(0);
+    expect(await db.document.count()).toBe(0);
+    expect(await db.designation.count()).toBe(0);
+    expect(await db.holiday.count()).toBe(0);
+  });
+
   it("resetDb removes everything", async () => {
     await makeEmployee();
     await resetDb();

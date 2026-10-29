@@ -17,7 +17,7 @@ export default async function ProfilePage() {
   const rows: [string, string][] = [
     ["Employee code", profile.code],
     ["Work email", profile.email],
-    ["Designation", profile.designation],
+    ["Designation", profile.designation ?? "—"],
     ["Department", profile.department ?? "—"],
     ["Reports to", profile.managerName ?? "—"],
     ["Joined", formatIsoDate(profile.joinedOn)],

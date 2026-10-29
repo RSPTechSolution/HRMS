@@ -19,6 +19,11 @@ export async function seed(db: PrismaClient): Promise<{ employees: number }> {
   const deptIds = new Map<string, string>();
   for (const name of DEPARTMENTS) deptIds.set(name, (await db.department.create({ data: { name } })).id);
 
+  const designationIds = new Map<string, string>();
+  for (const title of [...new Set(PEOPLE.map((p) => p.designation))]) {
+    designationIds.set(title, (await db.designation.create({ data: { title } })).id);
+  }
+
   const empIds = new Map<string, string>();
   for (const [i, p] of PEOPLE.entries()) {
     const email = emailFor(p);
@@ -29,7 +34,7 @@ export async function seed(db: PrismaClient): Promise<{ employees: number }> {
         code: `LNW-${String(i + 1).padStart(4, "0")}`,
         fullName: p.name,
         workEmail: email,
-        designation: p.designation,
+        designationId: designationIds.get(p.designation)!,
         status: p.status ?? "ACTIVE",
         joinedOn: joinedOnFor(i),
         departmentId: deptId,
