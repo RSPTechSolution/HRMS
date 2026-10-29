@@ -140,6 +140,38 @@ export function withdrawApproval(actor: CurrentUser, requestId: string, now = ne
   });
 }
 
+/** The requester's own requests, newest first. */
+export function listMyRequests(actor: CurrentUser, take = 50): Promise<RequestWithSteps[]> {
+  return db.approvalRequest.findMany({ where: { requesterId: actor.employeeId }, include: { steps: true }, orderBy: { createdAt: "desc" }, take });
+}
+
+/** Full names for everyone a set of requests mentions (requesters, approvers, deciders). */
+export async function namesFor(rows: RequestWithSteps[]): Promise<Map<string, string>> {
+  const ids = new Set<string>();
+  for (const r of rows) {
+    ids.add(r.requesterId);
+    for (const s of r.steps) {
+      if (s.approverId) ids.add(s.approverId);
+      if (s.decidedById) ids.add(s.decidedById);
+    }
+  }
+  const people = await db.employee.findMany({ where: { id: { in: [...ids] } }, select: { id: true, fullName: true } });
+  return new Map(people.map((p) => [p.id, p.fullName]));
+}
+
+/** Where a request stands, in words: "Waiting on Ananya Sharma", "Waiting on HR", "Declined by …". */
+export function describeStep(r: RequestWithSteps, names: Map<string, string>): string {
+  if (r.status === "APPROVED") return "Approved";
+  if (r.status === "WITHDRAWN") return "Withdrawn";
+  if (r.status === "DECLINED") {
+    const decider = r.steps.find((s) => s.decision === "DECLINED")?.decidedById;
+    return `Declined by ${(decider && names.get(decider)) || "an approver"}`;
+  }
+  const step = r.steps.find((s) => s.order === r.currentStep);
+  if (step?.role === "MANAGER" && step.approverId) return `Waiting on ${names.get(step.approverId) ?? "their manager"}`;
+  return "Waiting on HR";
+}
+
 export async function listPendingFor(actor: CurrentUser): Promise<RequestWithSteps[]> {
   const rows = await db.approvalRequest.findMany({
     where: { status: "PENDING", requesterId: { not: actor.employeeId } },

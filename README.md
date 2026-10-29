@@ -16,6 +16,10 @@ Demo logins (password `Password@123`): `admin@`, `hr@`, `payroll@`, `manager@`, 
 
 Password emails are printed to the terminal in development (`npm run dev`). A production build (`npm start`) refuses to send mail until a real transport is configured, so password links never end up in server logs. To try "Forgot password" on a production build locally, set `MAIL_TRANSPORT=console` in `.env`.
 
+## Nightly job
+
+`npm run jobs:close-day` closes yesterday's attendance: it flags missed check-outs and absences and notifies the people concerned. It is safe to run more than once. Schedule it daily at 00:30 IST (on Windows: Task Scheduler → Create Basic Task → Daily 00:30 → Start a program `npm` with arguments `run jobs:close-day` and "Start in" set to this folder). Admins can also run it from **Settings → Scheduled jobs**.
+
 ## Checks
 
 - `npm test` — unit and integration tests (uses a throwaway `test.db`)

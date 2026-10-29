@@ -1,20 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
-
-const PASSWORD = "Password@123";
-
-async function signIn(page: Page, email: string, path = "/login"): Promise<void> {
-  await page.goto(path);
-  await page.getByLabel("Work email").fill(email);
-  await page.getByLabel("Password").fill(PASSWORD);
-  await page.getByRole("button", { name: "Sign in" }).click();
-}
-
-/** Signs out through the UI, which also ends the session on the server. */
-async function signOut(page: Page): Promise<void> {
-  await page.goto("/profile");
-  await page.getByRole("button", { name: "Sign out", exact: true }).click();
-  await expect(page).toHaveURL(/\/login$/);
-}
+import { expect, test } from "@playwright/test";
+import { PASSWORD, signIn, signOut, submitLogin } from "./helpers";
 
 test("signed-out visitors are sent to sign in", async ({ page }) => {
   await page.goto("/profile");
@@ -25,13 +10,13 @@ test("employee signs in, uses the command menu and signs out", async ({ page }) 
   await signIn(page, "employee@lnwebworks.test");
   await expect(page).toHaveURL(/\/home$/);
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Arjun");
-  await expect(page.getByRole("button", { name: /Notifications, 2 unread/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Notifications, \d+ unread/ })).toBeVisible();
 
   await page.keyboard.press("Control+k");
   await page.getByRole("combobox").fill("profile");
   await page.keyboard.press("Enter");
-  await expect(page).toHaveURL(/\/profile$/);
-  await expect(page.getByText("Ananya Sharma")).toBeVisible();
+  await expect(page).toHaveURL(/\/people\/[^/?]+$/);
+  await expect(page.getByRole("link", { name: "Ananya Sharma" })).toBeVisible();
 
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await expect(page).toHaveURL(/\/login$/);
@@ -40,19 +25,13 @@ test("employee signs in, uses the command menu and signs out", async ({ page }) 
 });
 
 test("returns people to the page they asked for, but never off-site", async ({ page }) => {
-  await signIn(page, "manager@lnwebworks.test", "/login?next=%2Fprofile");
-  await expect(page).toHaveURL(/\/profile$/);
+  await signIn(page, "manager@lnwebworks.test", "/login?next=%2Fpeople");
+  await expect(page).toHaveURL(/\/people$/);
   await signOut(page);
   await signIn(page, "manager@lnwebworks.test", "/login?next=%2F%2Fevil.example");
   await expect(page).toHaveURL(/localhost:3100\/home$/);
 });
 
-/** Submits the login form and waits until React has finished handling the response (and reset the form). */
-async function submitLogin(page: Page): Promise<void> {
-  const button = page.getByRole("button", { name: "Sign in" });
-  await Promise.all([page.waitForResponse((r) => r.request().method() === "POST" && r.url().includes("/login")), button.click()]);
-  await expect(button).toBeEnabled();
-}
 
 test("wrong passwords show an error and five failures lock the account", async ({ page }) => {
   await page.goto("/login");

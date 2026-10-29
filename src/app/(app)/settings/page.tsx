@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { SettingRow } from "@/components/settings/SettingRow";
+import { JobsCard } from "@/components/settings/JobsCard";
 import { WordReveal } from "@/components/ui/WordReveal";
 import { can } from "@/domain/auth/permissions";
 import { SETTING_KEYS, SETTING_META } from "@/domain/settings/settings";
@@ -27,6 +28,7 @@ export default async function SettingsPage() {
           <SettingRow key={key} settingKey={key} label={SETTING_META[key].label} help={SETTING_META[key].help} kind={SETTING_META[key].kind} value={settings[key]} />
         ))}
       </section>
+      <JobsCard />
     </main>
   );
 }

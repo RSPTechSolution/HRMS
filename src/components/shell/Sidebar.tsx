@@ -39,6 +39,7 @@ export function Sidebar({ links, fullName, role }: { links: NavLink[]; fullName:
           <Link key={l.href} href={l.href} className="nav-btn" aria-current={isActivePath(pathname, l.href) ? "page" : undefined}>
             <Icon name={l.icon} />
             <span>{l.label}</span>
+            {l.badge ? <em className="count" aria-label={`${l.badge} waiting`}>{l.badge}</em> : null}
           </Link>
         ))}
       </nav>

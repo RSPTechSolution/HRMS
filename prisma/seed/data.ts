@@ -72,6 +72,31 @@ export const PEOPLE: SeedPerson[] = [
 
 export const DEMO_LOGINS = PEOPLE.filter((p) => p.email).map((p) => ({ email: p.email!, name: p.name }));
 
+/** Recent joiners still on probation (everyone else joined between 2020 and 2025). */
+export const RECENT_JOINERS: Record<string, { joinedOn: string; probationEndsOn: string }> = {
+  "Tarun Batra": { joinedOn: "2026-06-15", probationEndsOn: "2026-12-15" },
+  "Lakshmi Menon": { joinedOn: "2026-08-03", probationEndsOn: "2027-02-03" },
+  "Ravi Prakash": { joinedOn: "2026-09-21", probationEndsOn: "2027-03-21" },
+};
+
+/** Demo holiday calendar for 2026 (HR manages the real list from Phase 1b). */
+export const HOLIDAYS_2026: { date: string; name: string }[] = [
+  { date: "2026-01-26", name: "Republic Day" },
+  { date: "2026-03-04", name: "Holi" },
+  { date: "2026-08-15", name: "Independence Day" },
+  { date: "2026-10-02", name: "Gandhi Jayanti" },
+  { date: "2026-10-20", name: "Dussehra" },
+  { date: "2026-11-08", name: "Diwali" },
+  { date: "2026-11-09", name: "Govardhan Puja" },
+  { date: "2026-11-24", name: "Guru Nanak Jayanti" },
+  { date: "2026-12-25", name: "Christmas" },
+];
+
+export const FEMALE_FIRST_NAMES = new Set([
+  "Ananya", "Simran", "Sneha", "Kavya", "Tanvi", "Shreya", "Pallavi", "Ritika", "Ishita", "Riya", "Mehak", "Divya",
+  "Priya", "Swati", "Komal", "Meera", "Sakshi", "Neha", "Pooja", "Sonia", "Lakshmi",
+]);
+
 export const APPROVAL_POLICIES: Record<string, ("MANAGER" | "HR")[]> = {
   LEAVE: ["MANAGER", "HR"],
   WFH: ["MANAGER", "HR"],

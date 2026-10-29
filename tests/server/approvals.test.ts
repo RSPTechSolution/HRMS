@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { db } from "@/lib/db";
 import { loadCurrentUser } from "@/server/auth/users";
 import { registerApprovalType } from "@/server/approvals/registry";
-import { decideApproval, listPendingFor, submitApproval, withdrawApproval } from "@/server/approvals/engine";
+import { decideApproval, describeStep, listMyRequests, listPendingFor, namesFor, submitApproval, withdrawApproval } from "@/server/approvals/engine";
 import { makeEmployee, resetDb } from "../helpers/db";
 
 const events: string[] = [];
@@ -106,6 +106,26 @@ describe("approval engine", () => {
     const { hr, me } = await org();
     await submit(hr.employee.id);
     expect(await listPendingFor(await me(hr))).toHaveLength(0);
+  });
+
+  it("lists people's own requests newest first and describes where each one is", async () => {
+    const { hr, manager, emp, me } = await org();
+    const first = await submit(emp.employee.id, "s1");
+    const second = await submit(emp.employee.id, "s2");
+    await db.approvalRequest.update({ where: { id: first.id }, data: { createdAt: new Date(Date.now() - 60_000) } });
+    const mine = await listMyRequests(await me(emp));
+    expect(mine.map((r) => r.id)).toEqual([second.id, first.id]);
+
+    const names = await namesFor(mine);
+    expect(describeStep(mine[0], names)).toBe("Waiting on Ananya Sharma");
+    await decideApproval(await me(manager), second.id, "APPROVED");
+    const afterManager = (await listMyRequests(await me(emp)))[0];
+    expect(describeStep(afterManager, names)).toBe("Waiting on HR");
+    await decideApproval(await me(hr), second.id, "APPROVED");
+    expect(describeStep((await listMyRequests(await me(emp)))[0], names)).toBe("Approved");
+    await decideApproval(await me(manager), first.id, "DECLINED", "Busy week");
+    const declined = (await listMyRequests(await me(emp)))[1];
+    expect(describeStep(declined, await namesFor([declined]))).toBe("Declined by Ananya Sharma");
   });
 
   it("fails loudly for an unknown request type and a missing request", async () => {

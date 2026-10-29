@@ -28,6 +28,14 @@ describe("settings service", () => {
     expect(await getSetting("company.name")).toBe("LN Webworks");
   });
 
+  it("falls back to both attendance defaults when the stored pair is inconsistent", async () => {
+    await db.setting.create({ data: { key: "attendance.halfDayMinutes", value: "600" } });
+    await db.setting.create({ data: { key: "attendance.requiredDailyMinutes", value: "{corrupt" } });
+    const s = await getSettings();
+    expect(s["attendance.requiredDailyMinutes"]).toBe(540);
+    expect(s["attendance.halfDayMinutes"]).toBe(270);
+  });
+
   it("falls back to the default when a stored value is corrupt or invalid", async () => {
     await db.setting.create({ data: { key: "attendance.requiredDailyMinutes", value: "{not json" } });
     await db.setting.create({ data: { key: "attendance.halfDayMinutes", value: JSON.stringify("ten") } });

@@ -53,8 +53,14 @@ describe("primaryRoleLabel", () => {
 
 describe("navigation", () => {
   it("shows Settings to admins only", () => {
-    expect(navFor(base).map((l) => l.href)).toEqual(["/home", "/profile"]);
-    expect(navFor({ ...base, isAdmin: true }).map((l) => l.href)).toEqual(["/home", "/profile", "/settings"]);
+    expect(navFor(base).map((l) => l.href)).toEqual(["/home", "/attendance", "/people", "/approvals", "/profile"]);
+    expect(navFor({ ...base, isManager: true }).map((l) => l.href)).toEqual(["/home", "/attendance", "/people", "/approvals", "/reports/attendance", "/profile"]);
+    expect(navFor({ ...base, isHR: true }).map((l) => l.href)).toEqual(["/home", "/attendance", "/people", "/approvals", "/reports/attendance", "/profile"]);
+    expect(navFor({ ...base, isAdmin: true }).map((l) => l.href)).toEqual(["/home", "/attendance", "/people", "/approvals", "/reports/attendance", "/profile", "/settings"]);
+  });
+  it("shows a badge with the number of approvals waiting", () => {
+    expect(navFor(base, 3).find((l) => l.href === "/approvals")?.badge).toBe(3);
+    expect(navFor(base, 0).find((l) => l.href === "/approvals")?.badge).toBeUndefined();
   });
   it("matches nested paths but not prefixes of other words", () => {
     expect(isActivePath("/settings", "/settings")).toBe(true);

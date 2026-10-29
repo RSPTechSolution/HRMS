@@ -56,8 +56,9 @@ export async function consumePasswordToken(
   newPassword: string,
   now = new Date(),
 ): Promise<{ ok: true; userId: string } | { ok: false; error: string }> {
-  const row = await db.passwordToken.findUnique({ where: { id: sha256(token) }, include: { user: true } });
+  const row = await db.passwordToken.findUnique({ where: { id: sha256(token) }, include: { user: { include: { employee: true } } } });
   if (!row || row.usedAt || row.expiresAt.getTime() <= now.getTime()) return { ok: false, error: EXPIRED };
+  if (row.user.employee.status === "EXITED") return { ok: false, error: EXPIRED };
   const policyError = validateNewPassword(newPassword, row.user.email);
   if (policyError) return { ok: false, error: policyError };
 

@@ -26,7 +26,6 @@ export async function makeEmployee(opts: MakeEmployeeOptions = {}) {
       code: `T-${seq}-${Date.now()}`,
       fullName: name,
       workEmail: email,
-      designation: "Engineer",
       joinedOn: "2025-01-01",
       status: opts.status ?? "ACTIVE",
       managerId: opts.managerId ?? null,

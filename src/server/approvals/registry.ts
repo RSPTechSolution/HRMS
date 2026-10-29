@@ -1,11 +1,13 @@
 import "server-only";
-import type { DbTx } from "@/server/db-types";
+import type { Db, DbTx } from "@/server/db-types";
 
 export type ApprovalRef = { id: string; type: string; subjectId: string; requesterId: string; summary: string };
 
 export type ApprovalHooks = {
   label: string;
   link?: (ref: ApprovalRef) => string;
+  /** Extra context shown to approvers, e.g. the reason the person gave. */
+  detail?: (client: Db, ref: ApprovalRef) => Promise<string | null>;
   onApproved?: (tx: DbTx, ref: ApprovalRef) => Promise<void>;
   onClosed?: (tx: DbTx, ref: ApprovalRef, status: "DECLINED" | "WITHDRAWN") => Promise<void>;
 };
