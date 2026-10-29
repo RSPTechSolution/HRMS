@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { outbox } from "@/server/mail/mailer";
 import { createSession } from "@/server/auth/sessions";
 import { verifyPassword } from "@/server/auth/password";
+import { authenticate } from "@/server/auth/login";
 import {
   consumePasswordToken,
   issuePasswordToken,
@@ -38,6 +39,14 @@ describe("password tokens", () => {
     const stored = await db.user.findUniqueOrThrow({ where: { id: user.id } });
     expect(await verifyPassword(stored.passwordHash!, "Brand-new-pass1")).toBe(true);
     expect(await db.session.count({ where: { userId: user.id } })).toBe(0);
+  });
+
+  it("a successful password reset clears a lockout", async () => {
+    const { user } = await makeEmployee();
+    for (let i = 0; i < 5; i++) await authenticate(user.email, "wrong-password", now);
+    const token = await issuePasswordToken(user.id, "RESET", now);
+    expect((await consumePasswordToken(token, "Brand-new-pass1", now)).ok).toBe(true);
+    expect(await authenticate(user.email, "Brand-new-pass1", now)).toEqual({ ok: true, userId: user.id });
   });
 
   it("refuses a token twice", async () => {

@@ -67,6 +67,8 @@ export async function consumePasswordToken(
     if (claim.count !== 1) return false;
     await tx.user.update({ where: { id: row.userId }, data: { passwordHash } });
     await tx.session.deleteMany({ where: { userId: row.userId } });
+    // Proving ownership of the email ends any failed-login streak.
+    await tx.loginAttempt.create({ data: { email: row.user.email, success: true, at: now } });
     return true;
   });
   return used ? { ok: true, userId: row.userId } : { ok: false, error: EXPIRED };
