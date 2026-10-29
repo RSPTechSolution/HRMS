@@ -63,10 +63,13 @@ export async function createEmployee(actor: CurrentUser, raw: unknown, now = new
   return { ok: true, id };
 }
 
-/** Sends (or re-sends) the set-password invite. Callers run this after the response with `after()`. */
+/**
+ * Sends the set-password invite — only to accounts that have never set a password, so it can't be used
+ * to reset someone's existing login. Callers run this after the response with `after()`.
+ */
 export async function sendInvite(employeeId: string): Promise<void> {
-  const user = await db.user.findUnique({ where: { employeeId }, select: { id: true } });
-  if (user) await sendSetPasswordEmail(user.id);
+  const user = await db.user.findUnique({ where: { employeeId }, select: { id: true, passwordHash: true, employee: { select: { status: true } } } });
+  if (user && !user.passwordHash && user.employee.status !== "EXITED") await sendSetPasswordEmail(user.id);
 }
 
 export async function updateEmployee(actor: CurrentUser, id: string, raw: unknown, now = new Date()): Promise<EmployeeResult> {
@@ -74,8 +77,12 @@ export async function updateEmployee(actor: CurrentUser, id: string, raw: unknow
   const parsed = makeEmployeeInputSchema(istDateKey(now)).safeParse(raw);
   if (!parsed.success) return firstIssue(parsed.error);
   const { isHR, isPayroll, isAdmin, ...data } = parsed.data;
-  const existing = await db.employee.findUnique({ where: { id }, include: { user: true } });
-  if (!existing || !existing.user) return { ok: false, error: "That person doesn't exist." };
+  const found = await db.employee.findUnique({ where: { id }, include: { user: true } });
+  if (!found || !found.user) return { ok: false, error: "That person doesn't exist." };
+  // Keep the login row (password hash!) out of everything below, including the audit snapshot.
+  const { user: targetUser, ...existing } = found;
+  // Only admins may change an admin: otherwise HR could redirect an admin's login email and reset the password.
+  if (targetUser.isAdmin && !actor.isAdmin) return { ok: false, error: "Only an admin can change an admin's details." };
   const refError = await checkReferences(data, id);
   if (refError) return refError;
   if (wouldCreateCycle(id, data.managerId, await loadManagerMap())) {
@@ -84,12 +91,14 @@ export async function updateEmployee(actor: CurrentUser, id: string, raw: unknow
 
   const changedSensitive = Object.fromEntries(SENSITIVE.filter((k) => existing[k] !== data[k]).map((k) => [k, "changed"]));
   const exiting = data.status === "EXITED" && existing.status !== "EXITED";
-  const userId = existing.user.id;
+  const emailChanged = data.workEmail !== targetUser.email;
+  const userId = targetUser.id;
   await db.$transaction(async (tx) => {
     await tx.employee.update({ where: { id }, data });
     await tx.user.update({ where: { id: userId }, data: { email: data.workEmail, ...(actor.isAdmin ? { isHR, isPayroll, isAdmin } : {}) } });
-    if (exiting) {
-      await tx.session.deleteMany({ where: { userId } });
+    if (exiting) await tx.session.deleteMany({ where: { userId } });
+    if (exiting || emailChanged) {
+      // Links already mailed to the old address (or to someone leaving) must stop working.
       await tx.passwordToken.updateMany({ where: { userId, usedAt: null }, data: { usedAt: now } });
     }
     await writeAudit(tx, {

@@ -4,7 +4,7 @@ import { outbox } from "@/server/mail/mailer";
 import { loadCurrentUser } from "@/server/auth/users";
 import { createSession } from "@/server/auth/sessions";
 import { consumePasswordToken, issuePasswordToken } from "@/server/auth/password-tokens";
-import { createEmployee, updateEmployee, updateMyDetails } from "@/server/people/employees";
+import { createEmployee, sendInvite, updateEmployee, updateMyDetails } from "@/server/people/employees";
 import { getDirectory, getProfile } from "@/server/people/directory";
 import { getOrgChart } from "@/server/people/structure";
 import { makeEmployee, resetDb } from "../helpers/db";
@@ -104,6 +104,38 @@ describe("employee management", () => {
     await db.employee.update({ where: { id: engineer.employee.id }, data: { status: "EXITED" } });
     expect(await consumePasswordToken(token, "Brand-new-pass1")).toEqual({ ok: false, error: "This link has expired or was already used. Ask for a new one." });
     expect((await db.user.findUniqueOrThrow({ where: { id: engineer.user.id } })).passwordHash).toBeNull();
+  });
+
+  it("does not let HR change an admin's details (no account takeover via email change)", async () => {
+    const { hr, admin, me, input } = await org();
+    const res = await updateEmployee(await me(hr), admin.employee.id, input({ fullName: "Vikas Malhotra", workEmail: "hr.controlled@lnwebworks.test" }));
+    expect(res).toEqual({ ok: false, error: "Only an admin can change an admin's details." });
+    expect((await db.user.findUniqueOrThrow({ where: { id: admin.user.id } })).email).toBe(admin.user.email);
+  });
+
+  it("never writes the password hash into the audit log", async () => {
+    const { hr, engineer, me, input } = await org();
+    await db.user.update({ where: { id: engineer.user.id }, data: { passwordHash: "$argon2id$v=19$secret-hash" } });
+    await updateEmployee(await me(hr), engineer.employee.id, input({ fullName: "Arjun M", workEmail: engineer.user.email }));
+    const audit = await db.auditLog.findFirstOrThrow({ where: { action: "employee.update", entityId: engineer.employee.id } });
+    expect(`${audit.before}${audit.after}`).not.toContain("argon2");
+    expect(`${audit.before}${audit.after}`).not.toContain("passwordHash");
+  });
+
+  it("cancels outstanding password links when the work email changes", async () => {
+    const { hr, engineer, me, input } = await org();
+    const token = await issuePasswordToken(engineer.user.id, "RESET");
+    await updateEmployee(await me(hr), engineer.employee.id, input({ fullName: "Arjun Mehta", workEmail: "arjun.new@lnwebworks.test" }));
+    expect((await consumePasswordToken(token, "Brand-new-pass1")).ok).toBe(false);
+  });
+
+  it("only sends invites to accounts that have no password yet", async () => {
+    const { engineer } = await org();
+    await sendInvite(engineer.employee.id);
+    expect(outbox).toHaveLength(1);
+    await db.user.update({ where: { id: engineer.user.id }, data: { passwordHash: "set" } });
+    await sendInvite(engineer.employee.id);
+    expect(outbox).toHaveLength(1);
   });
 
   it("lets people edit their contact details but nothing else", async () => {
