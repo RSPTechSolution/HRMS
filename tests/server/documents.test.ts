@@ -1,14 +1,11 @@
-import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { db } from "@/lib/db";
 import { loadCurrentUser } from "@/server/auth/users";
-import { localFileStore } from "@/server/documents/store";
+import { memoryFileStore } from "../helpers/memory-store";
 import { listDocuments, openDocument, uploadDocument, verifyDocument } from "@/server/documents/documents";
 import { makeEmployee, resetDb } from "../helpers/db";
 
-const store = localFileStore(fs.mkdtempSync(path.join(os.tmpdir(), "lnp-docs-")));
+const store = memoryFileStore();
 const pdf = (name = "pan.pdf", size?: number) => {
   const body = new TextEncoder().encode("%PDF-1.7\nhello");
   const data = size ? new Uint8Array(size).fill(65) : body;

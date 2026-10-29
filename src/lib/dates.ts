@@ -45,6 +45,23 @@ export function daysOfMonth(year: number, month: number): string[] {
   return Array.from({ length: count }, (_, i) => `${year}-${pad(month)}-${pad(i + 1)}`);
 }
 
+/** Month arithmetic: shiftMonth(2026, 1, -1) → { year: 2025, month: 12 }. */
+export function shiftMonth(year: number, month: number, delta: number): { year: number; month: number } {
+  const index = year * 12 + (month - 1) + delta;
+  return { year: Math.floor(index / 12), month: (index % 12) + 1 };
+}
+
+/** "2026-10" */
+export const monthKey = (m: { year: number; month: number }) => `${m.year}-${pad(m.month)}`;
+
+/** Parses "YYYY-MM"; null when malformed. */
+export function parseMonthKey(value: string | undefined | null): { year: number; month: number } | null {
+  const match = /^(\d{4})-(\d{2})$/.exec(value ?? "");
+  if (!match) return null;
+  const month = Number(match[2]);
+  return month >= 1 && month <= 12 ? { year: Number(match[1]), month } : null;
+}
+
 export function monthOf(key: string): { year: number; month: number } {
   const [year, month] = key.split("-").map(Number);
   return { year, month };
