@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays, dayLabel, daysOfMonth, isRealDate, monthKey, parseMonthKey, shiftMonth, istDateKey, istDateTime, istStartOfDay, istTimeLabel, minutesBetween, monthOf, weekdayOf } from "@/lib/dates";
+import { addDays, dayLabel, daysOfMonth, isRealDate, monthKey, monthLabel, parseMonthKey, shiftMonth, istDateKey, istDateTime, istStartOfDay, istTimeLabel, minutesBetween, monthOf, weekdayOf } from "@/lib/dates";
 
 describe("IST dates", () => {
   it("uses the IST calendar day, not UTC", () => {
@@ -24,6 +24,7 @@ describe("IST dates", () => {
     expect(shiftMonth(2026, 1, -1)).toEqual({ year: 2025, month: 12 });
     expect(shiftMonth(2026, 12, 1)).toEqual({ year: 2027, month: 1 });
     expect(monthKey({ year: 2026, month: 3 })).toBe("2026-03");
+    expect(monthLabel({ year: 2026, month: 10 })).toBe("October 2026");
     expect(parseMonthKey("2026-10")).toEqual({ year: 2026, month: 10 });
     expect(parseMonthKey("2026-13")).toBeNull();
     expect(parseMonthKey(undefined)).toBeNull();

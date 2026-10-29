@@ -51,6 +51,11 @@ export function shiftMonth(year: number, month: number, delta: number): { year: 
   return { year: Math.floor(index / 12), month: (index % 12) + 1 };
 }
 
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+/** "October 2026" */
+export const monthLabel = (m: { year: number; month: number }) => `${MONTH_NAMES[m.month - 1]} ${m.year}`;
+
 /** "2026-10" */
 export const monthKey = (m: { year: number; month: number }) => `${m.year}-${pad(m.month)}`;
 
