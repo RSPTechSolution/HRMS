@@ -1,5 +1,6 @@
 "use server";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { z } from "zod";
 import { safeNext } from "@/lib/safe-next";
 import { authenticate } from "@/server/auth/login";
@@ -31,7 +32,8 @@ export async function loginAction(_prev: FormState, formData: FormData): Promise
 export async function forgotPasswordAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const email = String(formData.get("email") ?? "").trim();
   if (!z.email().safeParse(email).success) return { error: "Enter a valid email address.", email };
-  await requestPasswordReset(email);
+  // Send after the response so timing never reveals whether the account exists.
+  after(() => requestPasswordReset(email));
   return { message: "If that email belongs to an LN People account, a reset link is on its way. It works for 1 hour." };
 }
 
