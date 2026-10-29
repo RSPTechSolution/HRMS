@@ -83,6 +83,10 @@ export async function updateEmployee(actor: CurrentUser, id: string, raw: unknow
   const { user: targetUser, ...existing } = found;
   // Only admins may change an admin: otherwise HR could redirect an admin's login email and reset the password.
   if (targetUser.isAdmin && !actor.isAdmin) return { ok: false, error: "Only an admin can change an admin's details." };
+  // The work email is the login: letting HR change it would let them reset and use anyone's account.
+  if (data.workEmail !== targetUser.email && !actor.isAdmin) {
+    return { ok: false, error: "Only an admin can change someone's work email.", field: "workEmail" };
+  }
   const refError = await checkReferences(data, id);
   if (refError) return refError;
   if (wouldCreateCycle(id, data.managerId, await loadManagerMap())) {

@@ -122,10 +122,20 @@ describe("employee management", () => {
     expect(`${audit.before}${audit.after}`).not.toContain("passwordHash");
   });
 
-  it("cancels outstanding password links when the work email changes", async () => {
+  it("only lets admins change a work email, since it is the login", async () => {
     const { hr, engineer, me, input } = await org();
+    const payroll = await makeEmployee({ name: "Pooja Arora", isPayroll: true });
+    for (const target of [engineer, payroll]) {
+      const res = await updateEmployee(await me(hr), target.employee.id, input({ fullName: "Changed Name", workEmail: "hr.controlled@lnwebworks.test" }));
+      expect(res).toEqual({ ok: false, error: "Only an admin can change someone's work email.", field: "workEmail" });
+    }
+    expect((await db.user.findUniqueOrThrow({ where: { id: engineer.user.id } })).email).toBe(engineer.user.email);
+  });
+
+  it("cancels outstanding password links when the work email changes", async () => {
+    const { admin, engineer, me, input } = await org();
     const token = await issuePasswordToken(engineer.user.id, "RESET");
-    await updateEmployee(await me(hr), engineer.employee.id, input({ fullName: "Arjun Mehta", workEmail: "arjun.new@lnwebworks.test" }));
+    await updateEmployee(await me(admin), engineer.employee.id, input({ fullName: "Arjun Mehta", workEmail: "arjun.new@lnwebworks.test" }));
     expect((await consumePasswordToken(token, "Brand-new-pass1")).ok).toBe(false);
   });
 
