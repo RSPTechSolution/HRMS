@@ -5,6 +5,7 @@ import { maskTail, profileAccess, type ProfileAccess } from "@/domain/people/acc
 import { isInChain } from "@/domain/people/hierarchy";
 import type { EmployeeStatus, EmploymentType } from "@/domain/people/types";
 import { loadManagerMap } from "./hierarchy";
+import { todayStateMap } from "@/server/attendance/views";
 
 export type TodayPresence = "IN" | "BREAK" | "OUT" | "NOT_IN";
 
@@ -24,7 +25,7 @@ export type DirectoryEntry = {
 export async function getDirectory(
   viewer: CurrentUser,
   filter: { q?: string; departmentId?: string; includeExited?: boolean },
-  todayOf: (ids: string[]) => Promise<Map<string, TodayPresence>> = async () => new Map(),
+  todayOf: (ids: string[]) => Promise<Map<string, TodayPresence>> = (ids) => todayStateMap(ids),
 ): Promise<DirectoryEntry[]> {
   const showExited = !!filter.includeExited && (viewer.isHR || viewer.isAdmin);
   const rows = await db.employee.findMany({

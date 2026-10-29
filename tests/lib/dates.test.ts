@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays, daysOfMonth, istDateKey, istDateTime, istStartOfDay, istTimeLabel, minutesBetween, monthOf, weekdayOf } from "@/lib/dates";
+import { addDays, dayLabel, daysOfMonth, istDateKey, istDateTime, istStartOfDay, istTimeLabel, minutesBetween, monthOf, weekdayOf } from "@/lib/dates";
 
 describe("IST dates", () => {
   it("uses the IST calendar day, not UTC", () => {
@@ -16,6 +16,7 @@ describe("IST dates", () => {
     expect(daysOfMonth(2026, 2)).toHaveLength(28);
     expect(daysOfMonth(2026, 10)[0]).toBe("2026-10-01");
     expect(monthOf("2026-10-28")).toEqual({ year: 2026, month: 10 });
+    expect(dayLabel("2026-10-28")).toBe("Wed 28 Oct");
   });
   it("converts IST wall-clock times to instants", () => {
     expect(istStartOfDay("2026-10-28").toISOString()).toBe("2026-10-27T18:30:00.000Z");

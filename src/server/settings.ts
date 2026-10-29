@@ -12,9 +12,11 @@ import {
   type Settings,
 } from "@/domain/settings/settings";
 import { writeAudit } from "./audit";
+import type { Db } from "./db-types";
 
-export async function getSettings(): Promise<Settings> {
-  const rows = await db.setting.findMany();
+/** Pass a transaction client when calling from inside a transaction (SQLite has one connection). */
+export async function getSettings(client: Db = db): Promise<Settings> {
+  const rows = await client.setting.findMany();
   const out: Settings = { ...SETTINGS_DEFAULTS };
   for (const row of rows) {
     if (!isSettingKey(row.key)) continue;

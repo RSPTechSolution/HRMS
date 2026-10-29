@@ -56,6 +56,15 @@ export function istDateTime(key: string, hhmm: string): Date {
   return new Date(istStartOfDay(key).getTime() + (h * 60 + m) * 60 * 1000);
 }
 
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** "Tue 28 Oct" */
+export function dayLabel(key: string): string {
+  const [, m, d] = key.split("-").map(Number);
+  return `${WEEKDAYS[weekdayOf(key)]} ${d} ${MONTHS[m - 1]}`;
+}
+
 /** Whole minutes from a to b (floored). */
 export function minutesBetween(a: Date, b: Date): number {
   return Math.floor((b.getTime() - a.getTime()) / 60000);
