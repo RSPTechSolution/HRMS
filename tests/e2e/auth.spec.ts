@@ -62,6 +62,10 @@ test("wrong passwords show an error and five failures lock the account", async (
     await submitLogin(page);
     await expect(page.locator(".form-error")).toHaveText("That email and password don't match.");
   }
+  // Screen readers announce the error, and the fields are marked invalid and linked to it.
+  await expect(page.getByRole("alert").filter({ hasText: "That email and password don't match." })).toBeVisible();
+  await expect(page.getByLabel("Password")).toHaveAttribute("aria-invalid", "true");
+  await expect(page.getByLabel("Password")).toHaveAccessibleDescription("That email and password don't match.");
   // The email stays filled after a failed attempt; only the password is typed again.
   await expect(page.getByLabel("Work email")).toHaveValue("payroll@lnwebworks.test");
   await page.getByLabel("Password").fill(PASSWORD);

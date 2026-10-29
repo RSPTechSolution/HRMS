@@ -1,6 +1,7 @@
 "use client";
 import { useActionState, useEffect } from "react";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import { FormError } from "@/components/ui/FormFeedback";
 import { useToast } from "@/components/ui/Toaster";
 import type { SettingInputKind } from "@/domain/settings/settings";
 import { updateSettingAction } from "@/app/(app)/settings/actions";
@@ -20,8 +21,8 @@ export function SettingRow({ settingKey, label, help, kind, value }: { settingKe
       <input type="hidden" name="key" value={settingKey} />
       <div style={{ flex: "1 1 260px" }}>
         <label className="t" htmlFor={id}>{label}</label>
-        <p className="help">{help}</p>
-        {state?.error ? <p className="form-error">{state.error}</p> : null}
+        <p className="help" id={`${id}-help`}>{help}</p>
+        {state?.error ? <FormError id={`${id}-error`}>{state.error}</FormError> : null}
       </div>
       <div style={{ display: "flex", gap: 8, alignItems: "center", flex: "1 1 280px", justifyContent: "flex-end", flexWrap: "wrap" }}>
         {kind === "weekdays" ? (
@@ -43,6 +44,8 @@ export function SettingRow({ settingKey, label, help, kind, value }: { settingKe
             defaultValue={value === null ? "" : String(value)}
             readOnly={kind === "readonly"}
             aria-readonly={kind === "readonly"}
+            aria-invalid={state?.error ? true : undefined}
+            aria-describedby={state?.error ? `${id}-help ${id}-error` : `${id}-help`}
           />
         )}
         {kind === "readonly" ? null : <SubmitButton className="btn btn-ghost" label={`Save ${label}`}>Save</SubmitButton>}
