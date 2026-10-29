@@ -27,7 +27,15 @@ function Field({ name, label, state, type = "text", value, required, readOnly, f
 
 const str = (v: Values[string]) => (typeof v === "string" ? v : null);
 
-export function EmployeeForm({ mode, employeeId, initial, designations, departments, managers, canAssignRoles, canEditEmail }: {
+/** After a server error, show what was submitted (checkboxes arrive as "on" or not at all). */
+function withSubmitted(initial: Values, state: PeopleFormState): Values {
+  if (!state?.values) return initial;
+  const v: Values = { ...state.values };
+  for (const box of ["isHR", "isPayroll", "isAdmin", "showBirthday"]) v[box] = state.values[box] === "on";
+  return v;
+}
+
+export function EmployeeForm({ mode, employeeId, initial: initialProp, designations, departments, managers, canAssignRoles, canEditEmail }: {
   mode: "create" | "edit";
   employeeId?: string;
   initial: Values;
@@ -39,8 +47,9 @@ export function EmployeeForm({ mode, employeeId, initial, designations, departme
 }) {
   const action = mode === "create" ? createEmployeeAction : updateEmployeeAction.bind(null, employeeId!);
   const [state, formAction] = useActionState(action, undefined);
+  const initial = withSubmitted(initialProp, state);
   return (
-    <form action={formAction} className="card" noValidate>
+    <form key={state?.at ?? 0} action={formAction} className="card" noValidate>
       {state?.error ? <FormError id="employee-form-error">{state.error}</FormError> : null}
       <fieldset className="group">
         <legend>Job</legend>
@@ -119,10 +128,11 @@ export function EmployeeForm({ mode, employeeId, initial, designations, departme
 }
 
 /** What employees may change about themselves. */
-export function SelfEditForm({ initial }: { initial: Values }) {
+export function SelfEditForm({ initial: initialProp }: { initial: Values }) {
   const [state, formAction] = useActionState(updateMyDetailsAction, undefined);
+  const initial = withSubmitted(initialProp, state);
   return (
-    <form action={formAction} className="card" noValidate>
+    <form key={state?.at ?? 0} action={formAction} className="card" noValidate>
       {state?.error ? <FormError id="employee-form-error">{state.error}</FormError> : null}
       <div className="form-grid">
         <Field name="phone" label="Phone" type="tel" state={state} value={str(initial.phone)} />
@@ -134,6 +144,7 @@ export function SelfEditForm({ initial }: { initial: Values }) {
         <Field name="emergencyPhone" label="Emergency phone" type="tel" state={state} value={str(initial.emergencyPhone)} />
       </div>
       <div className="checks">
+        <input type="hidden" name="showBirthday" value="false" />
         <label><input type="checkbox" name="showBirthday" defaultChecked={initial.showBirthday !== false} /> Show my birthday to colleagues</label>
       </div>
       <div className="actions-row"><SubmitButton>Save my details</SubmitButton></div>

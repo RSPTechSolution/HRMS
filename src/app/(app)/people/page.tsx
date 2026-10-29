@@ -11,18 +11,23 @@ import { listDepartments } from "@/server/people/structure";
 
 export const metadata: Metadata = { title: "People" };
 
-export default async function PeoplePage({ searchParams }: { searchParams: Promise<{ q?: string; dept?: string }> }) {
+export default async function PeoplePage({ searchParams }: { searchParams: Promise<{ q?: string; dept?: string; former?: string }> }) {
   const user = await requireUser();
-  const { q, dept } = await searchParams;
-  const [people, departments] = await Promise.all([getDirectory(user, { q, departmentId: dept }), listDepartments()]);
+  const { q, dept, former } = await searchParams;
+  const canSeeFormer = can(user, "employees.manage");
+  const includeExited = canSeeFormer && former === "1";
+  const [people, departments] = await Promise.all([getDirectory(user, { q, departmentId: dept, includeExited }), listDepartments()]);
   const total = departments.reduce((sum, d) => sum + d._count.employees, 0);
-  const chipHref = (id?: string) => {
+  const href = (over: { dept?: string | null; former?: boolean }) => {
     const p = new URLSearchParams();
     if (q) p.set("q", q);
-    if (id) p.set("dept", id);
+    const d = over.dept === undefined ? dept : over.dept;
+    if (d) p.set("dept", d);
+    if (over.former ?? includeExited) p.set("former", "1");
     const s = p.toString();
     return s ? `/people?${s}` : "/people";
   };
+  const chipHref = (id?: string) => href({ dept: id ?? null });
 
   return (
     <main className="page" aria-label="People">
@@ -49,6 +54,11 @@ export default async function PeoplePage({ searchParams }: { searchParams: Promi
             <Link key={d.id} className="chip" href={chipHref(d.id)} aria-current={dept === d.id ? "true" : undefined}>{d.name}</Link>
           ))}
         </nav>
+        {canSeeFormer ? (
+          <Link className="chip" href={href({ former: !includeExited })} aria-current={includeExited ? "true" : undefined}>
+            Include former employees
+          </Link>
+        ) : null}
       </div>
       <section className="tgrid" aria-live="polite">
         {people.length === 0 ? (

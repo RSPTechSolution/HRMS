@@ -36,9 +36,11 @@ export function MonthCalendar({ days, fixHref, earliestFix }: { days: MonthDay[]
         );
         const fixable = fixHref && !d.beforeJoining && FIXABLE.has(d.status) && !d.correctionPending && (!earliestFix || d.date >= earliestFix);
         return fixable ? (
-          <Link key={d.date} href={fixHref(d.date)} className={cls} style={style} title={`${label} — ask for a correction`} aria-label={`${label}. Ask for a correction`} role="listitem">
-            {body}
-          </Link>
+          <div key={d.date} role="listitem" style={{ display: "contents" }}>
+            <Link href={fixHref(d.date)} className={cls} style={style} title={`${label} — ask for a correction`} aria-label={`${label}. Ask for a correction`}>
+              {body}
+            </Link>
+          </div>
         ) : (
           <div key={d.date} className={cls} style={style} title={label} aria-label={label} role="listitem">
             {body}

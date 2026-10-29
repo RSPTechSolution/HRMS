@@ -7,14 +7,15 @@ import { createEmployee, sendInvite, updateEmployee, updateMyDetails } from "@/s
 import { createDepartment, createDesignation, renameDepartment, renameDesignation } from "@/server/people/structure";
 import { uploadDocument, verifyDocument } from "@/server/documents/documents";
 
-export type PeopleFormState = { error?: string; field?: string; message?: string } | undefined;
+/** On an error the submitted values come back so the form can be shown again exactly as typed. */
+export type PeopleFormState = { error?: string; field?: string; message?: string; values?: Record<string, string>; at?: number } | undefined;
 
 const fields = (fd: FormData) => Object.fromEntries([...fd.entries()].filter(([, v]) => typeof v === "string")) as Record<string, string>;
 
 export async function createEmployeeAction(_prev: PeopleFormState, fd: FormData): Promise<PeopleFormState> {
   const user = await requireUser();
   const result = await createEmployee(user, fields(fd));
-  if (!result.ok) return { error: result.error, field: result.field };
+  if (!result.ok) return { error: result.error, field: result.field, values: fields(fd), at: Date.now() };
   after(() => sendInvite(result.id));
   revalidatePath("/people");
   redirect(`/people/${result.id}?invited=1`);
@@ -23,7 +24,7 @@ export async function createEmployeeAction(_prev: PeopleFormState, fd: FormData)
 export async function updateEmployeeAction(id: string, _prev: PeopleFormState, fd: FormData): Promise<PeopleFormState> {
   const user = await requireUser();
   const result = await updateEmployee(user, id, fields(fd));
-  if (!result.ok) return { error: result.error, field: result.field };
+  if (!result.ok) return { error: result.error, field: result.field, values: fields(fd), at: Date.now() };
   revalidatePath(`/people/${id}`);
   redirect(`/people/${id}?saved=1`);
 }
@@ -31,7 +32,7 @@ export async function updateEmployeeAction(id: string, _prev: PeopleFormState, f
 export async function updateMyDetailsAction(_prev: PeopleFormState, fd: FormData): Promise<PeopleFormState> {
   const user = await requireUser();
   const result = await updateMyDetails(user, fields(fd));
-  if (!result.ok) return { error: result.error, field: result.field };
+  if (!result.ok) return { error: result.error, field: result.field, values: fields(fd), at: Date.now() };
   revalidatePath(`/people/${user.employeeId}`);
   redirect(`/people/${user.employeeId}?tab=personal&saved=1`);
 }

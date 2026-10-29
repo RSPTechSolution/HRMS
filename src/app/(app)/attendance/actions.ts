@@ -17,12 +17,13 @@ export async function checkAction(kind: EventKind): Promise<{ ok: true } | { ok:
   return result.ok ? { ok: true } : result;
 }
 
-export type CorrectionFormState = { error?: string; sentAt?: number } | undefined;
+export type CorrectionFormState = { error?: string; sentAt?: number; values?: Record<string, string>; at?: number } | undefined;
 
 export async function requestCorrectionAction(_prev: CorrectionFormState, fd: FormData): Promise<CorrectionFormState> {
   const user = await requireUser();
-  const result = await requestCorrection(user, Object.fromEntries(fd.entries()));
-  if (!result.ok) return { error: result.error };
+  const values = Object.fromEntries([...fd.entries()].map(([k, v]) => [k, String(v)]));
+  const result = await requestCorrection(user, values);
+  if (!result.ok) return { error: result.error, values, at: Date.now() };
   revalidatePath("/", "layout");
   return { sentAt: Date.now() };
 }

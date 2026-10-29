@@ -20,6 +20,15 @@ test("an employee runs their day from the clock card", async ({ page }) => {
   await expect(page.locator(".tl").getByText("Break started", { exact: true })).toBeVisible();
 });
 
+test("past days in the calendar are links that start a correction", async ({ page }) => {
+  await signInHome(page, "employee@lnwebworks.test");
+  await page.goto("/attendance");
+  const fixLinks = page.getByRole("link", { name: /Ask for a correction/ });
+  expect(await fixLinks.count()).toBeGreaterThan(0);
+  await fixLinks.first().click();
+  await expect(page).toHaveURL(/fix=\d{4}-\d{2}-\d{2}#fix$/);
+});
+
 test("a correction goes to the manager, who approves it from the inbox", async ({ page }) => {
   await signInHome(page, "employee@lnwebworks.test");
   await page.goto("/attendance");
