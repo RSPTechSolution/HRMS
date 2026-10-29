@@ -14,6 +14,16 @@ export function canAct(state: RequestState, actor: Actor): boolean {
   return step.role === "MANAGER" ? step.approverId === actor.employeeId || hrLike : hrLike;
 }
 
+/**
+ * True when the current step is genuinely this person's job: the named manager on a MANAGER step, or
+ * HR/Admin on an HR step. HR may still override a MANAGER step (canAct), but that is not "waiting on" them.
+ */
+export function isWaitingOn(state: RequestState, actor: Actor): boolean {
+  if (!canAct(state, actor)) return false;
+  const step = currentStepOf(state)!;
+  return step.role === "HR" || step.approverId === actor.employeeId;
+}
+
 export function applyDecision(state: RequestState, actor: Actor, decision: Decision, comment?: string): Outcome {
   if (state.status !== "PENDING") return { ok: false, error: "This request is no longer pending." };
   if (!canAct(state, actor)) return { ok: false, error: "You can't act on this request." };

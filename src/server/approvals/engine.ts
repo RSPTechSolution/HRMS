@@ -2,7 +2,7 @@ import "server-only";
 import { db } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
 import type { CurrentUser } from "@/domain/auth/types";
-import { applyDecision, applyWithdraw, canAct } from "@/domain/approvals/decide";
+import { applyDecision, applyWithdraw, isWaitingOn } from "@/domain/approvals/decide";
 import { parsePolicySteps, planSteps } from "@/domain/approvals/routing";
 import type { Actor, Decision, RequestState, RequestStatus, StepRole } from "@/domain/approvals/types";
 import { writeAudit } from "@/server/audit";
@@ -146,5 +146,5 @@ export async function listPendingFor(actor: CurrentUser): Promise<RequestWithSte
     include: { steps: true },
     orderBy: { createdAt: "asc" },
   });
-  return rows.filter((r) => canAct(toState(r), actorOf(actor)));
+  return rows.filter((r) => isWaitingOn(toState(r), actorOf(actor)));
 }

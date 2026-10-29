@@ -43,9 +43,12 @@ describe("approval engine", () => {
     expect(await db.notification.count({ where: { userId: manager.user.id, kind: "approval.pending" } })).toBe(1);
 
     expect(await listPendingFor(await me(manager))).toHaveLength(1);
+    // HR can override a manager step, but it is not "waiting on" HR until the manager has decided.
+    expect(await listPendingFor(await me(hr))).toHaveLength(0);
     expect(await decideApproval(await me(manager), req.id, "APPROVED")).toEqual({ ok: true, status: "PENDING" });
     expect(await db.notification.count({ where: { userId: hr.user.id, kind: "approval.pending" } })).toBe(1);
     expect(await listPendingFor(await me(manager))).toHaveLength(0);
+    expect(await listPendingFor(await me(hr))).toHaveLength(1);
 
     expect(await decideApproval(await me(hr), req.id, "APPROVED")).toEqual({ ok: true, status: "APPROVED" });
     expect(events).toEqual(["approved:s1"]);
