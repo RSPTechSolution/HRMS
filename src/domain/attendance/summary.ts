@@ -54,7 +54,13 @@ export function summarise(events: TimedEvent[], until: Date): DaySummary {
   };
 }
 
-/** A session nobody closed for 16 hours is treated as forgotten. */
-export function isAbandoned(lastEventAt: Date, now: Date): boolean {
-  return now.getTime() - lastEventAt.getTime() > OPEN_SESSION_MAX_MINUTES * 60000;
+/** A session nobody closed within 16 hours of checking in is treated as forgotten. */
+export function isAbandoned(sessionStartedAt: Date, now: Date): boolean {
+  return now.getTime() - sessionStartedAt.getTime() > OPEN_SESSION_MAX_MINUTES * 60000;
+}
+
+/** When the most recent session started (its last IN). Breaks don't restart the 16-hour clock. */
+export function openSince(events: TimedEvent[]): Date | null {
+  for (let i = events.length - 1; i >= 0; i--) if (events[i].kind === "IN") return events[i].at;
+  return null;
 }

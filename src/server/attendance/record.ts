@@ -4,7 +4,7 @@ import { addDays, istDateKey, weekdayOf } from "@/lib/dates";
 import type { CurrentUser } from "@/domain/auth/types";
 import { nextAttendanceState, stateAfter } from "@/domain/attendance/state";
 import { computeDayStatus } from "@/domain/attendance/status";
-import { isAbandoned, summarise, type DaySummary } from "@/domain/attendance/summary";
+import { isAbandoned, openSince, summarise, type DaySummary } from "@/domain/attendance/summary";
 import type { AttendanceState, DayStatus, EventKind, TimedEvent } from "@/domain/attendance/types";
 import type { Settings } from "@/domain/settings/settings";
 import type { Db, DbTx } from "@/server/db-types";
@@ -31,7 +31,7 @@ export function evaluateDay(date: string, events: TimedEvent[], now: Date, ctx: 
   let summary = summarise(events, now);
   let live = false;
   if (summary.open && last) {
-    if (isAbandoned(last.at, now)) summary = summarise(events, last.at);
+    if (isAbandoned(openSince(events) ?? last.at, now)) summary = summarise(events, last.at);
     else live = true;
   }
   const status = computeDayStatus({
@@ -55,8 +55,9 @@ export async function currentDay(client: Db, employeeId: string, now: Date): Pro
   const last = await client.attendanceEvent.findFirst({ where: { employeeId }, orderBy: { at: "desc" } });
   if (last && last.workDate !== today) {
     const events = await client.attendanceEvent.findMany({ where: { employeeId, workDate: last.workDate }, orderBy: { at: "asc" } });
-    const state = stateAfter(events.map(toTimed));
-    if ((state === "WORKING" || state === "ON_BREAK") && !isAbandoned(last.at, now)) return { workDate: last.workDate, events, state };
+    const timed = events.map(toTimed);
+    const state = stateAfter(timed);
+    if ((state === "WORKING" || state === "ON_BREAK") && !isAbandoned(openSince(timed) ?? last.at, now)) return { workDate: last.workDate, events, state };
   }
   const events = await client.attendanceEvent.findMany({ where: { employeeId, workDate: today }, orderBy: { at: "asc" } });
   return { workDate: today, events, state: stateAfter(events.map(toTimed)) };

@@ -80,6 +80,28 @@ describe("recording attendance", () => {
     expect(await db.notification.count({ where: { userId: engineer.user.id, kind: "attendance.missing_checkout" } })).toBe(1);
   });
 
+  it("counts the 16 hours from check-in, so a late break doesn't keep yesterday open", async () => {
+    const { engineer, me } = await org();
+    const u = await me(engineer);
+    await recordAttendance(u, "IN", at("2026-10-28", "10:00"));
+    await recordAttendance(u, "BREAK_START", at("2026-10-28", "17:30"));
+    await recordAttendance(u, "BREAK_END", at("2026-10-28", "17:45"));
+    expect(await recordAttendance(u, "IN", at("2026-10-29", "09:30"))).toEqual({ ok: true, state: "WORKING", workDate: "2026-10-29" });
+  });
+
+  it("flags a typical forgotten check-out, even though the 00:30 run is too early to tell", async () => {
+    const { engineer, me } = await org();
+    await recordAttendance(await me(engineer), "IN", at("2026-10-28", "09:30"));
+    // 00:30 on the 29th: only 15 hours since check-in, so the day is still treated as in progress.
+    await closeAttendanceDay("2026-10-28", at("2026-10-29", "00:30"));
+    expect(await db.notification.count({ where: { userId: engineer.user.id, kind: "attendance.missing_checkout" } })).toBe(0);
+    // The next night's run closes yesterday and catches up on the 28th.
+    await closeAttendanceDay("2026-10-29", at("2026-10-30", "00:30"));
+    const row = await db.attendanceDay.findUniqueOrThrow({ where: { employeeId_workDate: { employeeId: engineer.employee.id, workDate: "2026-10-28" } } });
+    expect(row.status).toBe("MISSING_CHECKOUT");
+    expect(await db.notification.count({ where: { userId: engineer.user.id, kind: "attendance.missing_checkout" } })).toBe(1);
+  });
+
   it("marks absences once when closing a day with no attendance", async () => {
     const { engineer } = await org();
     const now = at("2026-10-28", "00:30");

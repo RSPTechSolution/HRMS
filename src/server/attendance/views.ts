@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { addDays, dayLabel, daysOfMonth, istDateKey, istTimeLabel, weekdayOf } from "@/lib/dates";
 import type { CurrentUser } from "@/domain/auth/types";
 import { stateAfter } from "@/domain/attendance/state";
-import { isAbandoned } from "@/domain/attendance/summary";
+import { isAbandoned, openSince } from "@/domain/attendance/summary";
 import type { AttendanceState, DayStatus, EventKind } from "@/domain/attendance/types";
 import { managesEmployee } from "@/server/people/hierarchy";
 import { currentDay, evaluateDay, loadDayContext, toTimed, type DayContext } from "./record";
@@ -150,8 +150,9 @@ export async function presenceOf(employeeIds: string[], now = new Date()): Promi
   for (const id of employeeIds) {
     const mine = events.filter((e) => e.employeeId === id);
     const yesterday = mine.filter((e) => e.workDate !== today);
-    const yState = stateAfter(yesterday.map(toTimed));
-    const liveYesterday = (yState === "WORKING" || yState === "ON_BREAK") && !isAbandoned(yesterday.at(-1)!.at, now);
+    const yTimed = yesterday.map(toTimed);
+    const yState = stateAfter(yTimed);
+    const liveYesterday = (yState === "WORKING" || yState === "ON_BREAK") && !isAbandoned(openSince(yTimed) ?? yesterday.at(-1)!.at, now);
     const day = liveYesterday ? yesterday : mine.filter((e) => e.workDate === today);
     const state = stateAfter(day.map(toTimed));
     const firstIn = day.find((e) => e.kind === "IN");
