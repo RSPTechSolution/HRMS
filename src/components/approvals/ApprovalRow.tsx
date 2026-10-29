@@ -34,6 +34,7 @@ export function ApprovalRow({ item }: { item: InboxItem }) {
           <div>
             <div className="t">{item.requester}</div>
             <div className="s">{item.label} · {item.summary} · {item.ago}</div>
+            {item.detail ? <div className="s" style={{ color: "var(--ink)" }}>{item.detail}</div> : null}
           </div>
           {mode === "idle" ? (
             <div className="ap-b">

@@ -5,6 +5,7 @@ import { istDateTime } from "@/lib/dates";
 import { loadCurrentUser } from "@/server/auth/users";
 import { decideApproval, listPendingFor, withdrawApproval } from "@/server/approvals/engine";
 import { listMyCorrections, requestCorrection } from "@/server/attendance/corrections";
+import { getInbox } from "@/server/approvals/inbox";
 import { makeEmployee, resetDb } from "../helpers/db";
 
 const now = istDateTime("2026-10-28", "12:00");
@@ -62,6 +63,21 @@ describe("attendance corrections", () => {
     const [req2] = await listPendingFor(await me(manager));
     await withdrawApproval(await me(engineer), req2.id);
     expect((await db.attendanceCorrection.findUniqueOrThrow({ where: { id: second.id } })).status).toBe("WITHDRAWN");
+  });
+
+  it("lets only one of two simultaneous requests for the same day through", async () => {
+    const { engineer, me } = await org();
+    const u = await me(engineer);
+    const results = await Promise.all([requestCorrection(u, fix(), now), requestCorrection(u, fix({ inTime: "10:00" }), now)]);
+    expect(results.filter((r) => r.ok)).toHaveLength(1);
+    expect(await db.attendanceCorrection.count({ where: { employeeId: engineer.employee.id, status: "PENDING" } })).toBe(1);
+  });
+
+  it("shows the approver the reason and what was actually recorded that day", async () => {
+    const { manager, engineer, me } = await org();
+    await requestCorrection(await me(engineer), fix({ breakStart: "13:00", breakEnd: "13:30" }), now);
+    const [item] = (await getInbox(await me(manager), now)).waiting;
+    expect(item.detail).toBe("“Forgot to check in” · Break 13:00–13:30 · Recorded that day: nothing");
   });
 
   it("validates before creating anything", async () => {
