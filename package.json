@@ -15,7 +15,7 @@
     "test:watch": "vitest",
     "test:e2e": "tsx tests/e2e/prepare-db.ts && next build && playwright test",
     "postinstall": "prisma generate",
-    "jobs:close-day": "tsx src/jobs/close-attendance-day.ts"
+    "jobs:close-day": "tsx --conditions=react-server src/jobs/close-attendance-day.ts"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.2.2",
