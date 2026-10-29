@@ -1,3 +1,5 @@
-export default function Page() {
-  return <main>LN People</main>;
+import { redirect } from "next/navigation";
+
+export default function Root() {
+  redirect("/home");
 }
