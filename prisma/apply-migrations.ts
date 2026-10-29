@@ -7,6 +7,8 @@ export function applyMigrations(dbFile: string, migrationsDir = path.resolve("pr
   for (const f of [dbFile, `${dbFile}-journal`, `${dbFile}-wal`, `${dbFile}-shm`]) fs.rmSync(f, { force: true });
   const sqlite = new Database(dbFile);
   try {
+    // WAL is stored in the file, so every later connection skips a disk flush per write — tests run much faster.
+    sqlite.pragma("journal_mode = WAL");
     const dirs = fs
       .readdirSync(migrationsDir, { withFileTypes: true })
       .filter((d) => d.isDirectory())
